@@ -1,0 +1,7 @@
+{
+  "appId": "ci.cgsi.correcteur",
+  "appName": "Correcteur de copies",
+  "webDir": "www",
+  "server": { "androidScheme": "https" },
+  "android": { "backgroundColor": "#0a2a6b" }
+}

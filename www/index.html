@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a2a6b">
+<title>Correcteur de copies scannées</title>
+<script src="lib/pdf.min.js"></script>
+<script src="lib/tesseract.min.js"></script>
+<style>
+:root{--bg1:#0a2a6b;--bg2:#1456c8;--card:rgba(255,255,255,.96);--ink:#10223f;--accent:#1456c8;--ok:#0f9d58;--warn:#e67e00;--bad:#c62828}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#fff;min-height:100vh;background:linear-gradient(160deg,var(--bg1),var(--bg2));background-attachment:fixed}
+header{padding:18px 16px 4px;text-align:center}
+header h1{margin:0;font-size:1.5rem}
+header p{margin:4px 0 0;opacity:.85;font-size:.9rem}
+main{max-width:1000px;margin:auto;padding:12px 14px 60px;display:grid;gap:14px}
+.card{background:var(--card);color:var(--ink);border-radius:14px;padding:14px 16px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.card h2{margin:0 0 8px;font-size:1.1rem;color:var(--accent)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+label{font-size:.8rem;font-weight:600;display:block;margin-bottom:3px}
+input,select{padding:8px 10px;border:1px solid #b9c6e0;border-radius:8px;font-size:.95rem;background:#fff;color:var(--ink)}
+input[type=password],input[type=text]{min-width:200px}
+.drop{border:2px dashed #7d9ae0;border-radius:12px;padding:18px;text-align:center;cursor:pointer;background:#f1f5ff;transition:.15s}
+.drop.over{background:#dbe6ff;border-color:var(--accent)}
+.drop small{display:block;color:#51638a;margin-top:4px}
+.files{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px}
+.files li{display:flex;gap:8px;align-items:center;background:#eef3ff;border-radius:8px;padding:6px 10px;font-size:.88rem}
+.files li span.n{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.files input{flex:1;min-width:0;padding:5px 8px;font-size:.85rem}
+button{border:0;border-radius:10px;padding:10px 16px;font-size:.95rem;font-weight:600;cursor:pointer;background:var(--accent);color:#fff}
+button.sec{background:#e3eaff;color:var(--accent)}
+button.x{background:transparent;color:var(--bad);padding:2px 8px;font-size:1.1rem}
+button:disabled{opacity:.5;cursor:not-allowed}
+.count{font-size:.8rem;color:#51638a;font-weight:400}
+#status{font-size:.9rem;margin-top:8px;color:#33466e;white-space:pre-line}
+.bar{height:8px;background:#dbe6ff;border-radius:6px;overflow:hidden;margin-top:8px;display:none}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+.res h3{margin:0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.res h3 input{font-weight:700;font-size:1rem;flex:1;min-width:140px}
+.note{margin-left:auto;font-size:1.6rem;font-weight:800;color:var(--accent)}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.85rem}
+th,td{padding:6px 7px;border-bottom:1px solid #dfe6f5;text-align:left;vertical-align:top}
+th{background:#eef3ff;font-size:.78rem}
+td input{width:62px;padding:4px 6px}
+tr.check{background:#fff4e0}
+.appr{margin-top:10px;font-size:.88rem;background:#eef3ff;border-radius:8px;padding:8px 10px}
+.err{color:var(--bad);font-weight:600}
+#setup{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:16px;background:linear-gradient(160deg,var(--bg1),var(--bg2))}
+#setup .box{max-width:460px;width:100%}
+#setup h2{font-size:1.25rem}
+#setup ul{padding-left:18px;font-size:.88rem;margin:8px 0}
+#setup label.ck{display:flex;gap:8px;align-items:center;font-weight:500;font-size:.92rem;margin:4px 0}
+#setup .bar{display:block}
+#upd{position:fixed;left:10px;right:10px;bottom:10px;z-index:40;display:none;background:#fff;color:var(--ink);border-radius:12px;padding:12px 14px;box-shadow:0 6px 24px rgba(0,0,0,.4);border-left:6px solid var(--ok)}
+#upd .row{margin-top:8px}
+@media print{
+ body{background:#fff;color:#000}header,.noprint{display:none!important}
+ .card{box-shadow:none;border:1px solid #999;break-inside:avoid}
+ input{border:0;background:transparent}
+}
+</style>
+</head>
+<body>
+<div id="setup"><div class="card box">
+  <h2>🧠 Étape 1 : télécharger le moteur OCR</h2>
+  <p style="font-size:.9rem;margin:6px 0">Pour lire vos scans, l'application doit télécharger son moteur de reconnaissance de texte <b>une seule fois</b> (environ 15 à 20 Mo). Ensuite elle fonctionne <b>sans internet</b>.</p>
+  <label class="ck"><input type="checkbox" id="lf" checked> Français</label>
+  <label class="ck"><input type="checkbox" id="le"> Anglais</label>
+  <ul><li>Connectez-vous de préférence en Wi-Fi.</li><li>Le téléchargement reprend là où il s'est arrêté si vous relancez.</li></ul>
+  <div class="bar"><i id="sBar"></i></div>
+  <div id="sMsg" style="font-size:.88rem;margin:8px 0;min-height:1.2em"></div>
+  <button id="sGo" style="width:100%">⬇️ Télécharger le moteur OCR</button>
+</div></div>
+<div id="upd" class="noprint"><b>🔄 Mise à jour disponible : <span id="updV"></span></b>
+  <div style="font-size:.85rem;margin-top:3px">Téléchargez le nouvel APK puis ouvrez-le pour l'installer. Vos réglages et le moteur OCR sont conservés.</div>
+  <div class="row"><button id="updGo">⬇️ Mettre à jour</button><button class="sec" id="updLater">Plus tard</button></div></div>
+<header>
+  <h1>📝 Correcteur de copies scannées</h1>
+  <p>Correction 100 % locale (OCR + règles), sans API : rien ne quitte votre appareil.</p>
+</header>
+<main>
+
+<section class="card noprint">
+  <h2>⚙️ Paramètres</h2>
+  <div class="row">
+    <div><label>Note finale sur</label><input type="number" id="noteSur" value="20" min="1" style="width:90px"></div>
+    <div><label>Langue des copies (OCR)</label><select id="lang"></select></div>
+    <div><label class="ck" style="display:flex;gap:6px;align-items:center;font-weight:500"><input type="checkbox" id="autoUpd" checked> Mises à jour automatiques</label>
+      <button class="sec" id="chkUpd" type="button" style="margin-top:4px;padding:6px 12px">🔍 Vérifier maintenant</button></div>
+  </div>
+  <div class="count" id="ver" style="margin-top:6px">Version…</div>
+  <details style="margin-top:8px;font-size:.85rem"><summary><b>Comment rédiger le corrigé ?</b></summary>
+  <p>Une question par bloc, numérotée, avec les points et les annotations :<br>
+  <code>1) Capitale de la Côte d'Ivoire ? (2 pts)</code><br><code>Réponse : Yamoussoukro</code> — <code>Mots-clés : yamoussoukro</code><br>
+  <code>2) Résultat de 12 x 3 ? [1]</code> puis <code>36</code> &nbsp;|&nbsp; QCM : <code>3) ... /1</code> puis <code>B</code><br>
+  Points : <code>(2 pts)</code>, <code>[2]</code> ou <code>/2</code> (sans indication = 1 point). Les élèves doivent numéroter leurs réponses (1), 2., Q3...</p></details>
+</section>
+
+<section class="card noprint">
+  <h2>✅ 1. Corrigé avec annotations <span class="count" id="cCorr">(0/10)</span></h2>
+  <div class="drop" id="dropCorr">Glissez ici ou touchez pour choisir<small>Images (JPG, PNG) ou PDF – jusqu'à 10 fichiers</small></div>
+  <input type="file" id="inCorr" accept="image/*,application/pdf" multiple hidden>
+  <ul class="files" id="lCorr"></ul>
+</section>
+
+<section class="card noprint">
+  <h2>📄 2. Copies des élèves <span class="count" id="cCop">(0/10)</span></h2>
+  <div class="drop" id="dropCop">Glissez ici ou touchez pour choisir<small>1 fichier = 1 copie d'élève (images ou PDF multi-pages) – jusqu'à 10 fichiers</small></div>
+  <input type="file" id="inCop" accept="image/*,application/pdf" multiple hidden>
+  <ul class="files" id="lCop"></ul>
+</section>
+
+<section class="card noprint">
+  <div class="row">
+    <button id="go">🚀 Corriger les copies</button>
+    <button class="sec" id="csv" disabled>⬇️ Export CSV</button>
+    <button class="sec" id="print" disabled>🖨️ Imprimer / PDF</button>
+  </div>
+  <div class="bar" id="bar"><i id="barI"></i></div>
+  <div id="status"></div>
+</section>
+
+<div id="results" style="display:grid;gap:14px"></div>
+</main>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc='lib/pdf.worker.min.js';
+const MAX=10, MAXPAGES=12, MAXDIM=1600;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const S={corr:[],cop:[],res:[]};
+
+function setupZone(zone,input,list,counter,key){
+  const add=files=>{
+    const ok=[...files].filter(f=>f.type.startsWith('image/')||f.type==='application/pdf');
+    for(const f of ok){
+      if(S[key].length>=MAX){alert('Maximum '+MAX+' fichiers atteint.');break;}
+      S[key].push({file:f,name:f.name.replace(/\.[^.]+$/,'')});
+    }
+    draw();
+  };
+  const draw=()=>{
+    counter.textContent='('+S[key].length+'/'+MAX+')';
+    list.innerHTML='';
+    S[key].forEach((it,i)=>{
+      const li=document.createElement('li');
+      li.innerHTML='<span class="n">'+esc(it.file.name)+'</span>'+(key==='cop'?'<input placeholder="Nom de l\'élève (facultatif)" value="'+esc(it.student||'')+'">':'')+'<button class="x" title="Retirer">✕</button>';
+      if(key==='cop')li.querySelector('input').oninput=e=>it.student=e.target.value;
+      li.querySelector('button').onclick=()=>{S[key].splice(i,1);draw();};
+      list.appendChild(li);
+    });
+  };
+  zone.onclick=()=>input.click();
+  input.onchange=()=>{add(input.files);input.value='';};
+  zone.ondragover=e=>{e.preventDefault();zone.classList.add('over');};
+  zone.ondragleave=()=>zone.classList.remove('over');
+  zone.ondrop=e=>{e.preventDefault();zone.classList.remove('over');add(e.dataTransfer.files);};
+}
+setupZone($('dropCorr'),$('inCorr'),$('lCorr'),$('cCorr'),'corr');
+setupZone($('dropCop'),$('inCop'),$('lCop'),$('cCop'),'cop');
+
+// ---- lecture des fichiers (OCR local Tesseract.js) ----
+function fitCanvas(src,w,h){
+  const k=Math.min(1,MAXDIM/Math.max(w,h));
+  const c=document.createElement('canvas');c.width=Math.round(w*k);c.height=Math.round(h*k);
+  const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(src,0,0,c.width,c.height);return c;
+}
+function loadImg(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{URL.revokeObjectURL(u);res(im)};im.onerror=()=>rej(new Error('Image illisible : '+file.name));im.src=u;});}
+// ---- moteur OCR téléchargé au 1er lancement (stocké dans le cache de l'appareil) ----
+const V='5.1.1', CDN='https://cdn.jsdelivr.net/npm/';
+const ENGINE=[
+  {p:'ocr/worker.min.js',u:CDN+'tesseract.js@'+V+'/dist/worker.min.js',n:'Moteur de lecture'},
+  {p:'ocr/core/tesseract-core-simd-lstm.wasm.js',u:CDN+'tesseract.js-core@'+V+'/tesseract-core-simd-lstm.wasm.js',n:'Noyau OCR (rapide)'},
+  {p:'ocr/core/tesseract-core-lstm.wasm.js',u:CDN+'tesseract.js-core@'+V+'/tesseract-core-lstm.wasm.js',n:'Noyau OCR (compatibilité)'}
+];
+const LANGS={fra:'Français',eng:'Anglais'};
+const langFile=l=>({p:'ocr/lang/'+l+'.traineddata.gz',u:CDN+'@tesseract.js-data/'+l+'@1.0.0/4.0.0_best_int/'+l+'.traineddata.gz',n:'Langue : '+LANGS[l]});
+const abs=p=>new URL(p,location.href).href;
+async function installed(){
+  try{const c=await caches.open('ocr-v1');const ok=[];
+    const base=await Promise.all(ENGINE.map(e=>c.match(abs(e.p))));
+    if(base.some(x=>!x))return[];
+    for(const l of Object.keys(LANGS))if(await c.match(abs(langFile(l).p)))ok.push(l);
+    return ok;}catch(e){return[];}
+}
+async function swReady(){
+  if(!('serviceWorker' in navigator))throw new Error('Service worker indisponible sur cet appareil.');
+  await navigator.serviceWorker.register('sw.js');
+  await navigator.serviceWorker.ready;
+  if(!navigator.serviceWorker.controller)await new Promise(r=>{navigator.serviceWorker.addEventListener('controllerchange',r,{once:true});setTimeout(r,1500);});
+}
+async function downloadEngine(langs,onP){
+  const c=await caches.open('ocr-v1');
+  const list=ENGINE.concat(langs.map(langFile));
+  for(let i=0;i<list.length;i++){
+    const f=list[i];
+    if(await c.match(abs(f.p))){onP(i+1,list.length,f.n,100);continue;}
+    const r=await fetch(f.u);
+    if(!r.ok)throw new Error('Échec du téléchargement ('+r.status+') : '+f.n);
+    const total=+r.headers.get('content-length')||0,rd=r.body.getReader(),chunks=[];let got=0;
+    for(;;){const {done,value}=await rd.read();if(done)break;chunks.push(value);got+=value.length;onP(i,list.length,f.n,total?Math.round(got/total*100):0);}
+    await c.put(abs(f.p),new Response(new Blob(chunks),{status:200}));
+    onP(i+1,list.length,f.n,100);
+  }
+}
+async function ensureEngine(){
+  let have=await installed();
+  if(have.length){await swReady();fillLangs(have);return;}
+  $('setup').style.display='flex';
+  await new Promise(res=>{
+    $('sGo').onclick=async()=>{
+      const langs=[];if($('lf').checked)langs.push('fra');if($('le').checked)langs.push('eng');
+      if(!langs.length)return alert('Choisissez au moins une langue.');
+      $('sGo').disabled=true;
+      try{
+        await swReady();
+        await downloadEngine(langs,(i,n,name,p)=>{$('sMsg').textContent='('+Math.min(i+1,n)+'/'+n+') '+name+' — '+p+'%';$('sBar').style.width=Math.round((i+p/100)/n*100)+'%';});
+        $('sBar').style.width='100%';$('sMsg').textContent='Moteur OCR installé ✔';
+        have=await installed();fillLangs(have);
+        setTimeout(()=>{$('setup').style.display='none';res();},700);
+      }catch(e){$('sMsg').innerHTML='<span class="err">'+esc(e.message)+'</span><br>Vérifiez votre connexion puis réessayez.';$('sGo').disabled=false;$('sGo').textContent='🔁 Réessayer';}
+    };
+  });
+}
+function fillLangs(have){
+  const sel=$('lang');sel.innerHTML='';
+  have.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=LANGS[l];sel.appendChild(o);});
+}
+$('go').disabled=true;
+ensureEngine().then(()=>{$('go').disabled=false;});
+
+// ---- mises à jour automatiques (via les Releases GitHub) ----
+let APP={build:0,version:'développement',repo:''},updUrl='';
+const openUrl=u=>{const B=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.Browser;if(B)B.open({url:u});else window.open(u,'_blank');};
+async function loadVersion(){
+  try{const r=await fetch('version.json',{cache:'no-store'});if(r.ok)APP=await r.json();}catch(e){}
+  $('ver').textContent='Version '+APP.version;
+}
+async function checkUpdate(manual){
+  if(!APP.repo){if(manual)alert('Mise à jour indisponible (version de développement).');return;}
+  try{
+    const r=await fetch('https://api.github.com/repos/'+APP.repo+'/releases/latest',{headers:{Accept:'application/vnd.github+json'},cache:'no-store'});
+    if(!r.ok)throw new Error(r.status===404?'aucune release trouvée (le dépôt doit être public)':'HTTP '+r.status);
+    const j=await r.json(),n=parseInt(String(j.tag_name||'').split('.').pop(),10)||0;
+    const a=(j.assets||[]).find(x=>/\.apk$/i.test(x.name));
+    try{localStorage.setItem('cc_lastchk',String(Date.now()));}catch(e){}
+    if(n>APP.build&&a){updUrl=a.browser_download_url;$('updV').textContent=String(j.tag_name).replace(/^v/,'');$('upd').style.display='block';}
+    else if(manual)alert('Vous avez déjà la dernière version ('+APP.version+').');
+  }catch(e){if(manual)alert('Impossible de vérifier les mises à jour : '+e.message);}
+}
+$('updGo').onclick=()=>{if(updUrl)openUrl(updUrl);};
+$('updLater').onclick=()=>{$('upd').style.display='none';};
+$('chkUpd').onclick=()=>checkUpdate(true);
+try{$('autoUpd').checked=localStorage.getItem('cc_autoupd')!=='0';}catch(e){}
+$('autoUpd').onchange=()=>{try{localStorage.setItem('cc_autoupd',$('autoUpd').checked?'1':'0');}catch(e){}};
+loadVersion().then(()=>{
+  let last=0;try{last=+localStorage.getItem('cc_lastchk')||0;}catch(e){}
+  if($('autoUpd').checked&&navigator.onLine&&Date.now()-last>6*3600e3)checkUpdate(false);
+});
+
+let worker=null,workerLang=null,onProg=()=>{};
+async function getWorker(){
+  const lang=$('lang').value;
+  if(worker&&workerLang===lang)return worker;
+  if(worker)await worker.terminate();
+  worker=await Tesseract.createWorker(lang,1,{
+    workerPath:abs('ocr/worker.min.js'),corePath:abs('ocr/core'),langPath:abs('ocr/lang'),
+    workerBlobURL:false,cacheMethod:'none',
+    logger:m=>{if(m.status==='recognizing text')onProg(Math.round(m.progress*100));}});
+  await worker.setParameters({tessedit_pageseg_mode:'6'});workerLang=lang;return worker;
+}
+async function readFile(file){
+  const w=await getWorker(),out=[];
+  if(file.type==='application/pdf'){
+    const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
+    for(let p=1;p<=Math.min(pdf.numPages,MAXPAGES);p++){
+      const page=await pdf.getPage(p);
+      const tc=await page.getTextContent();let txt='',y=null;
+      for(const it of tc.items){const yy=it.transform[5];if(y!==null&&Math.abs(yy-y)>2)txt+='\n';txt+=it.str+' ';y=yy;}
+      if(txt.trim().length>40){out.push(txt);continue;}
+      const vp=page.getViewport({scale:2}),c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;
+      await page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+      out.push((await w.recognize(fitCanvas(c,c.width,c.height))).data.text);
+    }
+  }else{
+    const im=await loadImg(file);
+    out.push((await w.recognize(fitCanvas(im,im.naturalWidth,im.naturalHeight))).data.text);
+  }
+  return out.join('\n');
+}
+
+// ---- analyse et notation (règles locales) ----
+const STOP=new Set('le la les un une des de du et ou en au aux ce ces cet cette est sont par pour dans sur avec sans qui que quoi son sa ses leur leurs il elle ils elles on nous vous mais donc car ni se ne pas plus the'.split(' '));
+const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+const Q_RE=/^\s*(?:q(?:uestion)?\.?\s*)?(\d{1,2})\s*(?:[\)\.\:\-–]\s+|[\)\.\:\-–]$)(.*)$/i;
+const PTS_RES=[/\(?\s*(\d+(?:[.,]\d+)?)\s*(?:pts?|points?)\b\s*\)?/i,/\[\s*(\d+(?:[.,]\d+)?)\s*\]/,/\/\s*(\d+(?:[.,]\d+)?)\s*$/m];
+const KW_RE=/^\s*(?:mots?[\s\-]*cl[ée]s?|accept(?:er|é|ée)?)\s*[:：]\s*(.+)$/im;
+const REP_RE=/^\s*r[ée]ponse\s*[:：]\s*/im;
+const NUM_RE=/-?\d+(?:[.,]\d+)?/g;
+const toF=s=>parseFloat(String(s).replace(',','.'));
+
+function splitQuestions(text){
+  const out={};let cur=null;
+  for(const line of String(text).split(/\r?\n/)){
+    const m=line.match(Q_RE);
+    if(m&&!(m[1] in out)){cur=m[1];out[cur]=m[2];}
+    else if(cur!==null)out[cur]+='\n'+line;
+  }
+  return out;
+}
+function parseCorrection(text){
+  const qs={};
+  for(const [num,b0] of Object.entries(splitQuestions(text))){
+    let block=b0,pts=null;
+    for(const rx of PTS_RES){const m=block.match(rx);if(m){pts=toF(m[1]);block=block.replace(rx,'');break;}}
+    let kws=[];const m=block.match(KW_RE);
+    if(m){kws=m[1].split(/[,;\/]/).map(s=>s.trim()).filter(Boolean);block=block.replace(KW_RE,'');}
+    block=block.replace(REP_RE,'').trim();
+    const lines=block.split(/\n/).map(s=>s.trim()).filter(Boolean);
+    const enonce=lines[0]||'';let answer=lines.slice(1).join(' ');if(!answer)answer=enonce;
+    qs[num]={pts:pts??1,enonce,answer,kws};
+  }
+  return qs;
+}
+function lev(a,b){
+  const m=a.length,n=b.length;if(!m)return n;if(!n)return m;
+  let p=Array.from({length:n+1},(_,j)=>j);
+  for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c;}
+  return p[n];
+}
+const ratio=(a,b)=>{const l=Math.max(a.length,b.length);return l?(1-lev(a,b)/l)*100:100;};
+function partial(k,s){
+  if(s.length<=k.length)return ratio(k,s);
+  let best=0;for(let i=0;i+k.length<=s.length;i++){best=Math.max(best,ratio(k,s.substr(i,k.length)));if(best===100)break;}return best;
+}
+function gradeQuestion(q,stu){
+  stu=(stu||'').trim();
+  if(!stu)return{r:0,t:'vide',d:'Pas de réponse',check:true};
+  const ans=q.answer,na=norm(ans);
+  if(/^[a-d]$/.test(na)){
+    const m=norm(stu).match(/\b([a-d])\b/),got=m?m[1]:'?';
+    return{r:got===na?1:0,t:'QCM',d:`QCM : attendu ${na.toUpperCase()}, lu ${got.toUpperCase()}`,check:got==='?'};
+  }
+  const nums=ans.match(NUM_RE);
+  if(nums&&na.split(' ').length<=3&&!q.kws.length){
+    const exp=nums.map(toF),got=(stu.match(NUM_RE)||[]).map(toF);
+    const ok=exp.filter(e=>got.some(g=>Math.abs(e-g)<=0.005*Math.max(1,Math.abs(e)))).length;
+    return{r:ok/exp.length,t:'nombre',d:`Nombre : attendu ${nums.join(', ')}`,check:ok===0};
+  }
+  let kws=q.kws,explicit=kws.length>0;
+  if(!explicit)kws=na.split(' ').filter(w=>w.length>=4&&!STOP.has(w));
+  const ns=norm(stu),toks=ns.split(' ');let hit=0;
+  for(const k of kws){const nk=norm(k);if(!nk)continue;
+    if(ns.includes(nk))hit++;
+    else if(nk.includes(' ')){if(partial(nk,ns)>=85)hit++;}
+    else if(toks.some(t=>ratio(nk,t)>=82))hit++;}
+  let r=hit/Math.max(1,kws.length);
+  if(r>=0.85)r=1;else if(r<0.25)r=0;
+  return{r,t:'texte',d:`${hit}/${kws.length} mots-clés trouvés`,check:r>0&&r<1};
+}
+function gradeCopy(corr,text){
+  const stu=splitQuestions(text);
+  return Object.keys(corr).sort((a,b)=>a-b).map(num=>{
+    const q=corr[num],g=gradeQuestion(q,stu[num]);
+    return{numero:num,enonce_court:q.enonce,points_max:q.pts,points:Math.round(g.r*q.pts*4)/4,
+      reponse_eleve:(stu[num]||'').trim().replace(/\s+/g,' ').slice(0,220),commentaire:g.d+' — attendu : '+q.answer.slice(0,120),a_verifier:g.check};
+  });
+}
+const appreciation=n=>n>=16?'Très bien.':n>=14?'Bien.':n>=12?'Assez bien.':n>=10?'Passable.':'Insuffisant, à revoir.';
+
+// ---- correction ----
+$('go').onclick=async()=>{
+  if(!S.corr.length)return alert('Ajoutez au moins un fichier de corrigé.');
+  if(!S.cop.length)return alert('Ajoutez au moins une copie d\'élève.');
+  $('go').disabled=true;S.res=[];$('results').innerHTML='';$('csv').disabled=$('print').disabled=true;
+  $('bar').style.display='block';
+  const st=m=>$('status').textContent=m, prog=v=>$('barI').style.width=v+'%';
+  const total=S.corr.length+S.cop.length;let done=0;
+  try{
+    let ctext='';
+    for(const c of S.corr){
+      st('Lecture du corrigé : '+c.file.name+'');
+      onProg=p=>st('Lecture du corrigé : '+c.file.name+' — '+p+'%');
+      ctext+=await readFile(c.file)+'\n';prog(95*++done/total);
+    }
+    const corr=parseCorrection(ctext);
+    if(!Object.keys(corr).length)throw new Error('Aucune question reconnue dans le corrigé. Numérotez-les : 1), 2), ...');
+    for(let i=0;i<S.cop.length;i++){
+      const c=S.cop[i];
+      st('Copie '+(i+1)+'/'+S.cop.length+' : '+c.file.name);
+      onProg=p=>st('Copie '+(i+1)+'/'+S.cop.length+' : '+c.file.name+' — OCR '+p+'%');
+      try{
+        const qs=gradeCopy(corr,await readFile(c.file));
+        const T=qs.reduce((s,q)=>s+q.points,0),M=qs.reduce((s,q)=>s+q.points_max,0);
+        S.res.push({eleve:c.student||c.name,fichier:c.file.name,questions:qs,appreciation:appreciation(M?T/M*20:0)});
+      }catch(e){S.res.push({fichier:c.file.name,eleve:c.student||c.name,error:e.message,questions:[]});}
+      render();prog(95*++done/total);
+    }
+    prog(100);st('Terminé ✔ — vérifiez les lignes ⚠️ et ajustez les points si besoin : la note se recalcule.');
+    $('csv').disabled=$('print').disabled=false;
+  }catch(e){st('Erreur : '+e.message);}
+  $('go').disabled=false;
+};
+
+const sur=()=>+$('noteSur').value||20;
+function totals(r){
+  const qs=r.questions||[];
+  const t=qs.reduce((s,q)=>s+(+q.points||0),0), m=qs.reduce((s,q)=>s+(+q.points_max||0),0)||+r.total_max||0;
+  const note=m?Math.round(t/m*sur()*100)/100:0;
+  return{t:Math.round(t*100)/100,m,note};
+}
+function render(){
+  const box=$('results');box.innerHTML='';
+  S.res.forEach((r,ri)=>{
+    const d=document.createElement('div');d.className='card res';
+    if(r.error){d.innerHTML='<h3>'+esc(r.eleve)+'</h3><p class="err">Échec : '+esc(r.error)+' ('+esc(r.fichier)+')</p>';box.appendChild(d);return;}
+    const T=totals(r);
+    d.innerHTML='<h3><input value="'+esc(r.eleve||'Élève '+(ri+1))+'" data-n="'+ri+'"><span class="note" id="note'+ri+'">'+T.note+' / '+sur()+'</span></h3>'+
+    '<div class="count" id="sub'+ri+'">Total brut : '+T.t+' / '+T.m+' — '+esc(r.fichier)+'</div>'+
+    '<table><tr><th>N°</th><th>Question</th><th>Pts</th><th>Max</th><th>Réponse / commentaire</th></tr>'+
+    (r.questions||[]).map((q,qi)=>'<tr class="'+(q.a_verifier?'check':'')+'"><td>'+esc(q.numero)+'</td><td>'+esc(q.enonce_court)+'</td>'+
+      '<td><input type="number" step="0.25" min="0" max="'+(+q.points_max||0)+'" value="'+(+q.points||0)+'" data-r="'+ri+'" data-q="'+qi+'"></td><td>'+(+q.points_max||0)+'</td>'+
+      '<td>'+(q.a_verifier?'⚠️ <b>À vérifier.</b> ':'')+'<i>'+esc(q.reponse_eleve)+'</i><br>'+esc(q.commentaire)+'</td></tr>').join('')+
+    '</table><div class="appr">'+esc(r.appreciation)+'</div>';
+    d.querySelector('h3 input').oninput=e=>r.eleve=e.target.value;
+    d.querySelectorAll('td input').forEach(inp=>inp.oninput=e=>{
+      const q=S.res[+e.target.dataset.r].questions[+e.target.dataset.q];
+      q.points=Math.min(+e.target.value||0,+q.points_max||Infinity);
+      const T2=totals(S.res[+e.target.dataset.r]),i=e.target.dataset.r;
+      $('note'+i).textContent=T2.note+' / '+sur();$('sub'+i).textContent='Total brut : '+T2.t+' / '+T2.m+' — '+S.res[i].fichier;
+    });
+    box.appendChild(d);
+  });
+}
+$('noteSur').onchange=render;
+
+$('csv').onclick=()=>{
+  const rows=[['Élève','Fichier','Total brut','Total max','Note /'+sur()]];
+  S.res.forEach(r=>{if(r.error){rows.push([r.eleve,r.fichier,'ERREUR','','']);return;}const T=totals(r);rows.push([r.eleve,r.fichier,T.t,T.m,T.note]);});
+  const csv='﻿'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='notes.csv';a.click();
+};
+$('print').onclick=()=>window.print();
+</script>
+</body>
+</html>
