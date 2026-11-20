@@ -167,7 +167,7 @@ function fitCanvas(src,w,h){
   const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(src,0,0,c.width,c.height);return c;
 }
 function loadImg(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{URL.revokeObjectURL(u);res(im)};im.onerror=()=>rej(new Error('Image illisible : '+file.name));im.src=u;});}
-// ---- moteur OCR téléchargé au 1er lancement (stocké dans le cache de l'appareil) ----
+// ---- moteur OCR : téléchargé au 1er lancement dans le stockage de l'application ----
 const V='5.1.1', CDN='https://cdn.jsdelivr.net/npm/';
 const ENGINE=[
   {p:'ocr/worker.min.js',u:CDN+'tesseract.js@'+V+'/dist/worker.min.js',n:'Moteur de lecture'},
@@ -176,37 +176,36 @@ const ENGINE=[
 ];
 const LANGS={fra:'Français',eng:'Anglais'};
 const langFile=l=>({p:'ocr/lang/'+l+'.traineddata.gz',u:CDN+'@tesseract.js-data/'+l+'@1.0.0/4.0.0_best_int/'+l+'.traineddata.gz',n:'Langue : '+LANGS[l]});
-const abs=p=>new URL(p,location.href).href;
+const isNative=()=>!!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform());
+const FS=()=>window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.Filesystem;
+const exists=async p=>{try{await FS().stat({path:p,directory:'DATA'});return true;}catch(e){return false;}};
 async function installed(){
-  try{const c=await caches.open('ocr-v1');const ok=[];
-    const base=await Promise.all(ENGINE.map(e=>c.match(abs(e.p))));
-    if(base.some(x=>!x))return[];
-    for(const l of Object.keys(LANGS))if(await c.match(abs(langFile(l).p)))ok.push(l);
-    return ok;}catch(e){return[];}
-}
-async function swReady(){
-  if(!('serviceWorker' in navigator))throw new Error('Service worker indisponible sur cet appareil.');
-  await navigator.serviceWorker.register('sw.js');
-  await navigator.serviceWorker.ready;
-  if(!navigator.serviceWorker.controller)await new Promise(r=>{navigator.serviceWorker.addEventListener('controllerchange',r,{once:true});setTimeout(r,1500);});
+  if(!isNative())return Object.keys(LANGS);           // navigateur : moteur chargé depuis internet, pas d'installation
+  if(!FS())return[];
+  for(const e of ENGINE)if(!await exists(e.p))return[];
+  const ok=[];for(const l of Object.keys(LANGS))if(await exists(langFile(l).p))ok.push(l);
+  return ok;
 }
 async function downloadEngine(langs,onP){
-  const c=await caches.open('ocr-v1');
   const list=ENGINE.concat(langs.map(langFile));
   for(let i=0;i<list.length;i++){
     const f=list[i];
-    if(await c.match(abs(f.p))){onP(i+1,list.length,f.n,100);continue;}
-    const r=await fetch(f.u);
-    if(!r.ok)throw new Error('Échec du téléchargement ('+r.status+') : '+f.n);
-    const total=+r.headers.get('content-length')||0,rd=r.body.getReader(),chunks=[];let got=0;
-    for(;;){const {done,value}=await rd.read();if(done)break;chunks.push(value);got+=value.length;onP(i,list.length,f.n,total?Math.round(got/total*100):0);}
-    await c.put(abs(f.p),new Response(new Blob(chunks),{status:200}));
+    if(await exists(f.p)){onP(i+1,list.length,f.n,100);continue;}
+    onP(i,list.length,f.n,0);
+    const h=await FS().addListener('progress',ev=>{if(ev.contentLength)onP(i,list.length,f.n,Math.round(ev.bytes/ev.contentLength*100));});
+    try{
+      await FS().downloadFile({url:f.u,path:f.p,directory:'DATA',recursive:true,progress:true});
+    }catch(e){
+      try{await FS().deleteFile({path:f.p,directory:'DATA'});}catch(_){}
+      throw new Error('Échec du téléchargement : '+f.n+' ('+(e.message||e)+')');
+    }finally{h&&h.remove&&h.remove();}
+    if(!await exists(f.p))throw new Error('Fichier introuvable après téléchargement : '+f.n);
     onP(i+1,list.length,f.n,100);
   }
 }
 async function ensureEngine(){
   let have=await installed();
-  if(have.length){await swReady();fillLangs(have);return;}
+  if(have.length){fillLangs(have);return;}
   $('setup').style.display='flex';
   await new Promise(res=>{
     $('sGo').onclick=async()=>{
@@ -214,7 +213,7 @@ async function ensureEngine(){
       if(!langs.length)return alert('Choisissez au moins une langue.');
       $('sGo').disabled=true;
       try{
-        await swReady();
+        if(!FS())throw new Error('Plugin de stockage indisponible (réinstallez l\'application).');
         await downloadEngine(langs,(i,n,name,p)=>{$('sMsg').textContent='('+Math.min(i+1,n)+'/'+n+') '+name+' — '+p+'%';$('sBar').style.width=Math.round((i+p/100)/n*100)+'%';});
         $('sBar').style.width='100%';$('sMsg').textContent='Moteur OCR installé ✔';
         have=await installed();fillLangs(have);
@@ -264,10 +263,13 @@ async function getWorker(){
   const lang=$('lang').value;
   if(worker&&workerLang===lang)return worker;
   if(worker)await worker.terminate();
-  worker=await Tesseract.createWorker(lang,1,{
-    workerPath:abs('ocr/worker.min.js'),corePath:abs('ocr/core'),langPath:abs('ocr/lang'),
-    workerBlobURL:false,cacheMethod:'none',
-    logger:m=>{if(m.status==='recognizing text')onProg(Math.round(m.progress*100));}});
+  const opts={logger:m=>{if(m.status==='recognizing text')onProg(Math.round(m.progress*100));}};
+  if(isNative()){
+    const uri=(await FS().getUri({path:'ocr/worker.min.js',directory:'DATA'})).uri;
+    const base=Capacitor.convertFileSrc(uri).replace(/worker\.min\.js$/,'');
+    Object.assign(opts,{workerPath:base+'worker.min.js',corePath:base+'core',langPath:base+'lang',workerBlobURL:false,cacheMethod:'none'});
+  }
+  worker=await Tesseract.createWorker(lang,1,opts);
   await worker.setParameters({tessedit_pageseg_mode:'6'});workerLang=lang;return worker;
 }
 async function readFile(file){

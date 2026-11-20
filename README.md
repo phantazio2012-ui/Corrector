@@ -1,7 +1,7 @@
 # 📝 Correcteur de copies — application Android (APK)
 
 Correction de copies scannées 100 % locale : OCR (Tesseract) + notation par règles, sans API.
-Au **premier lancement**, l'application télécharge son moteur OCR (≈ 15–20 Mo), puis fonctionne hors ligne.
+Au **premier lancement**, l'application télécharge son moteur OCR (≈ 15–20 Mo) dans son stockage interne, puis fonctionne hors ligne.
 
 ## Obtenir l'APK (sans rien installer sur votre PC)
 
@@ -51,7 +51,6 @@ Points : `(2 pts)`, `[2]` ou `/2` (sans indication = 1 point). Les élèves doiv
 
 ## Structure
 - `www/index.html` : l'application (interface, téléchargement du moteur, OCR, notation)
-- `www/sw.js` : service worker servant le moteur OCR depuis le cache (mode hors ligne)
 - `scripts/copy-libs.js` : copie pdf.js et tesseract.js dans `www/lib` au moment du build
 - `capacitor.config.json` : identifiant `ci.cgsi.correcteur`, nom de l'app
 - `.github/workflows/build-apk.yml` : compilation automatique de l'APK + publication de la Release
