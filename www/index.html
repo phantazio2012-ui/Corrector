@@ -188,6 +188,9 @@ async function installed(){
 }
 async function downloadEngine(langs,onP){
   const list=ENGINE.concat(langs.map(langFile));
+  for(const d of ['ocr','ocr/core','ocr/lang']){
+    try{await FS().mkdir({path:d,directory:'DATA',recursive:true});}catch(e){/* existe déjà */}
+  }
   for(let i=0;i<list.length;i++){
     const f=list[i];
     if(await exists(f.p)){onP(i+1,list.length,f.n,100);continue;}
