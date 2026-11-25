@@ -16,16 +16,18 @@ Le moteur OCR (français + anglais) est **embarqué dans l'APK** : aucun téléc
 
 ## 🔄 Mises à jour automatiques
 
-- À chaque `push` sur `main`, GitHub reconstruit l'APK et publie une nouvelle Release `v1.0.N` (N = numéro de build).
-- L'application vérifie la dernière Release au lancement (au plus toutes les 6 h, avec internet). S'il existe une
-  version plus récente, un bandeau « Mise à jour disponible » propose le téléchargement ; il suffit d'ouvrir l'APK
-  pour l'installer par-dessus (réglages et moteur OCR conservés).
-- Réglages : case « Mises à jour automatiques » (désactivable) et bouton « Vérifier maintenant ».
-- **Le dépôt doit être public** (l'application lit l'API GitHub sans identifiant). Dépôt privé = pas de vérification automatique.
-- Android demande toujours une confirmation avant d'installer : une installation 100 % silencieuse n'est pas possible
-  sans droits système.
-- `keystore/debug.keystore` donne la même signature à chaque build, ce qui permet d'installer les mises à jour
-  par-dessus l'ancienne version. Ne le supprimez pas : sinon il faudra désinstaller puis réinstaller.
+- À chaque `push` sur `main`, GitHub reconstruit l'APK et publie une Release `v1.0.N`.
+- L'application vérifie la dernière Release **seule** : au lancement, au retour dans l'application et toutes les 30 min
+  (avec internet, si la case « Mises à jour automatiques » est cochée).
+- Si une version plus récente existe, l'application **télécharge l'APK et lance l'installation d'elle-même**
+  (barre de progression, aucun navigateur, aucun bouton à toucher). Réglages et copies en cours de saisie ne sont pas concernés.
+- **Une seule autorisation la toute première fois** : Android demande d'autoriser l'application à installer des mises à jour
+  (écran système, à activer une fois).
+- **Confirmation Android** : sur Android 12+, l'installation peut se faire sans aucune confirmation quand le système
+  l'autorise. Sinon Android affiche lui-même une fenêtre « Mettre à jour ? » (impossible à supprimer sans droits système :
+  c'est une protection d'Android).
+- **Le dépôt doit être public** (l'application lit l'API GitHub sans identifiant).
+- `keystore/debug.keystore` donne la même signature à chaque build : ne le supprimez pas, sinon il faudra désinstaller puis réinstaller.
 
 ## Utilisation
 
@@ -56,6 +58,7 @@ Points : `(2 pts)`, `[2]` ou `/2` (sans indication = 1 point). Les élèves doiv
 ## Structure
 - `www/index.html` : l'application (interface, téléchargement du moteur, OCR, notation)
 - `scripts/copy-libs.js` : copie pdf.js, tesseract.js et le moteur OCR (worker, noyau, langues) dans `www/` au moment du build
+- `native/ApkUpdaterPlugin.java` + `scripts/patch-android.py` : module Android de mise à jour automatique (branché au build)
 - `capacitor.config.json` : identifiant `ci.cgsi.correcteur`, nom de l'app
 - `.github/workflows/build-apk.yml` : compilation automatique de l'APK + publication de la Release
 - `keystore/debug.keystore` : signature fixe (mises à jour installables par-dessus)
