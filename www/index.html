@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0a2a6b">
+<meta name="theme-color" content="#064e2b">
 <title>Correcteur de copies scannées</title>
 <script src="lib/pdf.min.js"></script>
 <script src="lib/tesseract.min.js"></script>
 <style>
-:root{--bg1:#0a2a6b;--bg2:#1456c8;--card:rgba(255,255,255,.96);--ink:#10223f;--accent:#1456c8;--ok:#0f9d58;--warn:#e67e00;--bad:#c62828}
+:root{--bg1:#064e2b;--bg2:#1f9d55;--card:rgba(255,255,255,.96);--ink:#0f2a1b;--accent:#0f7a40;--ok:#0f9d58;--warn:#e67e00;--bad:#c62828}
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#fff;min-height:100vh;background:linear-gradient(160deg,var(--bg1),var(--bg2));background-attachment:fixed}
 header{padding:18px 16px 4px;text-align:center}
@@ -19,32 +19,32 @@ main{max-width:1000px;margin:auto;padding:12px 14px 60px;display:grid;gap:14px}
 .card h2{margin:0 0 8px;font-size:1.1rem;color:var(--accent)}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
 label{font-size:.8rem;font-weight:600;display:block;margin-bottom:3px}
-input,select{padding:8px 10px;border:1px solid #b9c6e0;border-radius:8px;font-size:.95rem;background:#fff;color:var(--ink)}
+input,select{padding:8px 10px;border:1px solid #b7d9c4;border-radius:8px;font-size:.95rem;background:#fff;color:var(--ink)}
 input[type=password],input[type=text]{min-width:200px}
-.drop{border:2px dashed #7d9ae0;border-radius:12px;padding:18px;text-align:center;cursor:pointer;background:#f1f5ff;transition:.15s}
-.drop.over{background:#dbe6ff;border-color:var(--accent)}
-.drop small{display:block;color:#51638a;margin-top:4px}
+.drop{border:2px dashed #6fbf8d;border-radius:12px;padding:18px;text-align:center;cursor:pointer;background:#f0faf4;transition:.15s}
+.drop.over{background:#d3efdd;border-color:var(--accent)}
+.drop small{display:block;color:#4a6b58;margin-top:4px}
 .files{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px}
-.files li{display:flex;gap:8px;align-items:center;background:#eef3ff;border-radius:8px;padding:6px 10px;font-size:.88rem}
+.files li{display:flex;gap:8px;align-items:center;background:#e8f6ed;border-radius:8px;padding:6px 10px;font-size:.88rem}
 .files li span.n{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .files input{flex:1;min-width:0;padding:5px 8px;font-size:.85rem}
 button{border:0;border-radius:10px;padding:10px 16px;font-size:.95rem;font-weight:600;cursor:pointer;background:var(--accent);color:#fff}
-button.sec{background:#e3eaff;color:var(--accent)}
+button.sec{background:#dcf1e4;color:var(--accent)}
 button.x{background:transparent;color:var(--bad);padding:2px 8px;font-size:1.1rem}
 button:disabled{opacity:.5;cursor:not-allowed}
-.count{font-size:.8rem;color:#51638a;font-weight:400}
-#status{font-size:.9rem;margin-top:8px;color:#33466e;white-space:pre-line}
-.bar{height:8px;background:#dbe6ff;border-radius:6px;overflow:hidden;margin-top:8px;display:none}
+.count{font-size:.8rem;color:#4a6b58;font-weight:400}
+#status{font-size:.9rem;margin-top:8px;color:#2f5440;white-space:pre-line}
+.bar{height:8px;background:#d3efdd;border-radius:6px;overflow:hidden;margin-top:8px;display:none}
 .bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
 .res h3{margin:0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .res h3 input{font-weight:700;font-size:1rem;flex:1;min-width:140px}
 .note{margin-left:auto;font-size:1.6rem;font-weight:800;color:var(--accent)}
 table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.85rem}
-th,td{padding:6px 7px;border-bottom:1px solid #dfe6f5;text-align:left;vertical-align:top}
-th{background:#eef3ff;font-size:.78rem}
+th,td{padding:6px 7px;border-bottom:1px solid #d9ebe0;text-align:left;vertical-align:top}
+th{background:#e8f6ed;font-size:.78rem}
 td input{width:62px;padding:4px 6px}
 tr.check{background:#fff4e0}
-.appr{margin-top:10px;font-size:.88rem;background:#eef3ff;border-radius:8px;padding:8px 10px}
+.appr{margin-top:10px;font-size:.88rem;background:#e8f6ed;border-radius:8px;padding:8px 10px}
 .err{color:var(--bad);font-weight:600}
 #setup{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:16px;background:linear-gradient(160deg,var(--bg1),var(--bg2))}
 #setup .box{max-width:460px;width:100%}
@@ -54,6 +54,13 @@ tr.check{background:#fff4e0}
 #setup .bar{display:block}
 #upd{position:fixed;left:10px;right:10px;bottom:10px;z-index:40;display:none;background:#fff;color:var(--ink);border-radius:12px;padding:12px 14px;box-shadow:0 6px 24px rgba(0,0,0,.4);border-left:6px solid var(--ok)}
 #upd .row{margin-top:8px}
+#cam{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(0,40,20,.85)}
+#cam .box{max-width:460px;width:100%}
+#cam .th{display:flex;gap:6px;overflow-x:auto;margin:10px 0;min-height:64px}
+#cam .th img{height:64px;border-radius:6px;border:2px solid var(--accent)}
+.camBtn{width:100%;margin-top:8px}
+textarea{width:100%;min-height:130px;padding:8px;border:1px solid #b7d9c4;border-radius:8px;font:.85rem/1.35 ui-monospace,Consolas,monospace;color:var(--ink)}
+#review h3{margin:12px 0 4px;font-size:.95rem;color:var(--accent)}
 @media print{
  body{background:#fff;color:#000}header,.noprint{display:none!important}
  .card{box-shadow:none;border:1px solid #999;break-inside:avoid}
@@ -62,15 +69,12 @@ tr.check{background:#fff4e0}
 </style>
 </head>
 <body>
-<div id="setup"><div class="card box">
-  <h2>🧠 Étape 1 : télécharger le moteur OCR</h2>
-  <p style="font-size:.9rem;margin:6px 0">Pour lire vos scans, l'application doit télécharger son moteur de reconnaissance de texte <b>une seule fois</b> (environ 15 à 20 Mo). Ensuite elle fonctionne <b>sans internet</b>.</p>
-  <label class="ck"><input type="checkbox" id="lf" checked> Français</label>
-  <label class="ck"><input type="checkbox" id="le"> Anglais</label>
-  <ul><li>Connectez-vous de préférence en Wi-Fi.</li><li>Le téléchargement reprend là où il s'est arrêté si vous relancez.</li></ul>
-  <div class="bar"><i id="sBar"></i></div>
-  <div id="sMsg" style="font-size:.88rem;margin:8px 0;min-height:1.2em"></div>
-  <button id="sGo" style="width:100%">⬇️ Télécharger le moteur OCR</button>
+<div id="cam" class="noprint"><div class="card box">
+  <h2 id="camT">📷 Photographier</h2>
+  <div style="font-size:.88rem" id="camMsg">Cadrez la page entière, bien éclairée et à plat.</div>
+  <div class="th" id="camTh"></div>
+  <button id="camShot" style="width:100%">📷 Prendre une photo</button>
+  <div class="row" style="margin-top:8px"><button id="camDone" style="flex:1" disabled>✅ Terminer (<span id="camN">0</span> page)</button><button class="sec" id="camCancel">Annuler</button></div>
 </div></div>
 <div id="upd" class="noprint"><b>🔄 Mise à jour disponible : <span id="updV"></span></b>
   <div style="font-size:.85rem;margin-top:3px">Téléchargez le nouvel APK puis ouvrez-le pour l'installer. Vos réglages et le moteur OCR sont conservés.</div>
@@ -89,6 +93,7 @@ tr.check{background:#fff4e0}
     <div><label class="ck" style="display:flex;gap:6px;align-items:center;font-weight:500"><input type="checkbox" id="autoUpd" checked> Mises à jour automatiques</label>
       <button class="sec" id="chkUpd" type="button" style="margin-top:4px;padding:6px 12px">🔍 Vérifier maintenant</button></div>
   </div>
+  <label class="ck" style="display:flex;gap:6px;align-items:center;font-weight:500;margin-top:8px"><input type="checkbox" id="chkReview" checked> Vérifier / corriger le texte lu avant de noter</label>
   <div class="count" id="ver" style="margin-top:6px">Version…</div>
   <details style="margin-top:8px;font-size:.85rem"><summary><b>Comment rédiger le corrigé ?</b></summary>
   <p>Une question par bloc, numérotée, avec les points et les annotations :<br>
@@ -100,6 +105,7 @@ tr.check{background:#fff4e0}
 <section class="card noprint">
   <h2>✅ 1. Corrigé avec annotations <span class="count" id="cCorr">(0/10)</span></h2>
   <div class="drop" id="dropCorr">Glissez ici ou touchez pour choisir<small>Images (JPG, PNG) ou PDF – jusqu'à 10 fichiers</small></div>
+  <button class="sec camBtn" id="camCorr" type="button">📷 Photographier le corrigé</button>
   <input type="file" id="inCorr" accept="image/*,application/pdf" multiple hidden>
   <ul class="files" id="lCorr"></ul>
 </section>
@@ -107,6 +113,7 @@ tr.check{background:#fff4e0}
 <section class="card noprint">
   <h2>📄 2. Copies des élèves <span class="count" id="cCop">(0/10)</span></h2>
   <div class="drop" id="dropCop">Glissez ici ou touchez pour choisir<small>1 fichier = 1 copie d'élève (images ou PDF multi-pages) – jusqu'à 10 fichiers</small></div>
+  <button class="sec camBtn" id="camCop" type="button">📷 Photographier une copie</button>
   <input type="file" id="inCop" accept="image/*,application/pdf" multiple hidden>
   <ul class="files" id="lCop"></ul>
 </section>
@@ -121,6 +128,7 @@ tr.check{background:#fff4e0}
   <div id="status"></div>
 </section>
 
+<div id="review" class="card noprint" style="display:none"></div>
 <div id="results" style="display:grid;gap:14px"></div>
 </main>
 
@@ -131,6 +139,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const S={corr:[],cop:[],res:[]};
 
+const ZONES={};
 function setupZone(zone,input,list,counter,key){
   const add=files=>{
     const ok=[...files].filter(f=>f.type.startsWith('image/')||f.type==='application/pdf');
@@ -145,12 +154,13 @@ function setupZone(zone,input,list,counter,key){
     list.innerHTML='';
     S[key].forEach((it,i)=>{
       const li=document.createElement('li');
-      li.innerHTML='<span class="n">'+esc(it.file.name)+'</span>'+(key==='cop'?'<input placeholder="Nom de l\'élève (facultatif)" value="'+esc(it.student||'')+'">':'')+'<button class="x" title="Retirer">✕</button>';
+      li.innerHTML='<span class="n">'+esc(it.label||it.file.name)+'</span>'+(key==='cop'?'<input placeholder="Nom de l\'élève (facultatif)" value="'+esc(it.student||'')+'">':'')+'<button class="x" title="Retirer">✕</button>';
       if(key==='cop')li.querySelector('input').oninput=e=>it.student=e.target.value;
       li.querySelector('button').onclick=()=>{S[key].splice(i,1);draw();};
       list.appendChild(li);
     });
   };
+  ZONES[key]=draw;
   zone.onclick=()=>input.click();
   input.onchange=()=>{add(input.files);input.value='';};
   zone.ondragover=e=>{e.preventDefault();zone.classList.add('over');};
@@ -160,6 +170,48 @@ function setupZone(zone,input,list,counter,key){
 setupZone($('dropCorr'),$('inCorr'),$('lCorr'),$('cCorr'),'corr');
 setupZone($('dropCop'),$('inCop'),$('lCop'),$('cCop'),'cop');
 
+
+// ---- prise de photos par la caméra (plusieurs pages = un seul document) ----
+async function takePhoto(){
+  const C=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.Camera;
+  if(C){
+    const ph=await C.getPhoto({quality:85,width:2000,resultType:'dataUrl',source:'CAMERA',correctOrientation:true,saveToGallery:false});
+    const b=await (await fetch(ph.dataUrl)).blob();
+    return new File([b],'photo.jpg',{type:'image/jpeg'});
+  }
+  return new Promise((res,rej)=>{const i=document.createElement('input');i.type='file';i.accept='image/*';i.capture='environment';
+    i.onchange=()=>i.files[0]?res(i.files[0]):rej(new Error('annulé'));i.click();});
+}
+let camKey=null,camPages=[],camCount={corr:0,cop:0};
+function camRender(){
+  const th=$('camTh');th.innerHTML='';
+  camPages.forEach(f=>{const im=document.createElement('img');im.src=URL.createObjectURL(f);th.appendChild(im);});
+  $('camN').textContent=camPages.length;$('camDone').disabled=!camPages.length;
+  $('camDone').firstChild.textContent='✅ Terminer (';
+  $('camShot').textContent=camPages.length?'📷 Page suivante':'📷 Prendre une photo';
+}
+async function camShoot(){
+  try{camPages.push(await takePhoto());camRender();}
+  catch(e){/* annulé par l'utilisateur */}
+}
+function camOpen(key){
+  if(S[key].length>=MAX)return alert('Maximum '+MAX+' fichiers atteint.');
+  camKey=key;camPages=[];camRender();
+  $('camT').textContent=key==='cop'?'📷 Photographier une copie':'📷 Photographier le corrigé';
+  $('camMsg').textContent=key==='cop'?'Une copie peut avoir plusieurs pages : prenez-les dans l\'ordre, puis « Terminer ».':'Photographiez chaque page du corrigé annoté, puis « Terminer ».';
+  $('cam').style.display='flex';camShoot();
+}
+$('camShot').onclick=camShoot;
+$('camCancel').onclick=()=>{$('cam').style.display='none';camPages=[];};
+$('camDone').onclick=()=>{
+  if(!camPages.length)return;
+  const n=++camCount[camKey],label=(camKey==='cop'?'Copie photo ':'Corrigé photo ')+n+' ('+camPages.length+' p.)';
+  S[camKey].push({file:camPages[0],pages:camPages.slice(),label,name:label});
+  ZONES[camKey]();$('cam').style.display='none';camPages=[];
+};
+$('camCorr').onclick=()=>camOpen('corr');
+$('camCop').onclick=()=>camOpen('cop');
+
 // ---- lecture des fichiers (OCR local Tesseract.js) ----
 function fitCanvas(src,w,h){
   const k=Math.min(1,MAXDIM/Math.max(w,h));
@@ -167,70 +219,10 @@ function fitCanvas(src,w,h){
   const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(src,0,0,c.width,c.height);return c;
 }
 function loadImg(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{URL.revokeObjectURL(u);res(im)};im.onerror=()=>rej(new Error('Image illisible : '+file.name));im.src=u;});}
-// ---- moteur OCR : téléchargé au 1er lancement dans le stockage de l'application ----
-const V='5.1.1', CDN='https://cdn.jsdelivr.net/npm/';
-const ENGINE=[
-  {p:'ocr/worker.min.js',u:CDN+'tesseract.js@'+V+'/dist/worker.min.js',n:'Moteur de lecture'},
-  {p:'ocr/core/tesseract-core-simd-lstm.wasm.js',u:CDN+'tesseract.js-core@'+V+'/tesseract-core-simd-lstm.wasm.js',n:'Noyau OCR (rapide)'},
-  {p:'ocr/core/tesseract-core-lstm.wasm.js',u:CDN+'tesseract.js-core@'+V+'/tesseract-core-lstm.wasm.js',n:'Noyau OCR (compatibilité)'}
-];
+// ---- moteur OCR embarqué dans l'application (dossier ocr/) ----
 const LANGS={fra:'Français',eng:'Anglais'};
-const langFile=l=>({p:'ocr/lang/'+l+'.traineddata.gz',u:CDN+'@tesseract.js-data/'+l+'@1.0.0/4.0.0_best_int/'+l+'.traineddata.gz',n:'Langue : '+LANGS[l]});
-const isNative=()=>!!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform());
-const FS=()=>window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.Filesystem;
-const exists=async p=>{try{await FS().stat({path:p,directory:'DATA'});return true;}catch(e){return false;}};
-async function installed(){
-  if(!isNative())return Object.keys(LANGS);           // navigateur : moteur chargé depuis internet, pas d'installation
-  if(!FS())return[];
-  for(const e of ENGINE)if(!await exists(e.p))return[];
-  const ok=[];for(const l of Object.keys(LANGS))if(await exists(langFile(l).p))ok.push(l);
-  return ok;
-}
-async function downloadEngine(langs,onP){
-  const list=ENGINE.concat(langs.map(langFile));
-  for(const d of ['ocr','ocr/core','ocr/lang']){
-    try{await FS().mkdir({path:d,directory:'DATA',recursive:true});}catch(e){/* existe déjà */}
-  }
-  for(let i=0;i<list.length;i++){
-    const f=list[i];
-    if(await exists(f.p)){onP(i+1,list.length,f.n,100);continue;}
-    onP(i,list.length,f.n,0);
-    const h=await FS().addListener('progress',ev=>{if(ev.contentLength)onP(i,list.length,f.n,Math.round(ev.bytes/ev.contentLength*100));});
-    try{
-      await FS().downloadFile({url:f.u,path:f.p,directory:'DATA',recursive:true,progress:true});
-    }catch(e){
-      try{await FS().deleteFile({path:f.p,directory:'DATA'});}catch(_){}
-      throw new Error('Échec du téléchargement : '+f.n+' ('+(e.message||e)+')');
-    }finally{h&&h.remove&&h.remove();}
-    if(!await exists(f.p))throw new Error('Fichier introuvable après téléchargement : '+f.n);
-    onP(i+1,list.length,f.n,100);
-  }
-}
-async function ensureEngine(){
-  let have=await installed();
-  if(have.length){fillLangs(have);return;}
-  $('setup').style.display='flex';
-  await new Promise(res=>{
-    $('sGo').onclick=async()=>{
-      const langs=[];if($('lf').checked)langs.push('fra');if($('le').checked)langs.push('eng');
-      if(!langs.length)return alert('Choisissez au moins une langue.');
-      $('sGo').disabled=true;
-      try{
-        if(!FS())throw new Error('Plugin de stockage indisponible (réinstallez l\'application).');
-        await downloadEngine(langs,(i,n,name,p)=>{$('sMsg').textContent='('+Math.min(i+1,n)+'/'+n+') '+name+' — '+p+'%';$('sBar').style.width=Math.round((i+p/100)/n*100)+'%';});
-        $('sBar').style.width='100%';$('sMsg').textContent='Moteur OCR installé ✔';
-        have=await installed();fillLangs(have);
-        setTimeout(()=>{$('setup').style.display='none';res();},700);
-      }catch(e){$('sMsg').innerHTML='<span class="err">'+esc(e.message)+'</span><br>Vérifiez votre connexion puis réessayez.';$('sGo').disabled=false;$('sGo').textContent='🔁 Réessayer';}
-    };
-  });
-}
-function fillLangs(have){
-  const sel=$('lang');sel.innerHTML='';
-  have.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=LANGS[l];sel.appendChild(o);});
-}
-$('go').disabled=true;
-ensureEngine().then(()=>{$('go').disabled=false;});
+const abs=p=>new URL(p,location.href).href;
+(function(){const sel=$('lang');Object.keys(LANGS).forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=LANGS[l];sel.appendChild(o);});})();
 
 // ---- mises à jour automatiques (via les Releases GitHub) ----
 let APP={build:0,version:'développement',repo:''},updUrl='';
@@ -266,14 +258,15 @@ async function getWorker(){
   const lang=$('lang').value;
   if(worker&&workerLang===lang)return worker;
   if(worker)await worker.terminate();
-  const opts={logger:m=>{if(m.status==='recognizing text')onProg(Math.round(m.progress*100));}};
-  if(isNative()){
-    const uri=(await FS().getUri({path:'ocr/worker.min.js',directory:'DATA'})).uri;
-    const base=Capacitor.convertFileSrc(uri).replace(/worker\.min\.js$/,'');
-    Object.assign(opts,{workerPath:base+'worker.min.js',corePath:base+'core',langPath:base+'lang',workerBlobURL:false,cacheMethod:'none'});
-  }
-  worker=await Tesseract.createWorker(lang,1,opts);
+  worker=await Tesseract.createWorker(lang,1,{
+    workerPath:abs('ocr/worker.min.js'),corePath:abs('ocr/core'),langPath:abs('ocr/lang'),
+    workerBlobURL:false,cacheMethod:'none',
+    logger:m=>{if(m.status==='recognizing text')onProg(Math.round(m.progress*100));}});
   await worker.setParameters({tessedit_pageseg_mode:'6'});workerLang=lang;return worker;
+}
+async function readItem(it){
+  if(!it.pages)return readFile(it.file);
+  let t='';for(const f of it.pages)t+=await readFile(f)+'\n';return t;
 }
 async function readFile(file){
   const w=await getWorker(),out=[];
@@ -298,7 +291,7 @@ async function readFile(file){
 // ---- analyse et notation (règles locales) ----
 const STOP=new Set('le la les un une des de du et ou en au aux ce ces cet cette est sont par pour dans sur avec sans qui que quoi son sa ses leur leurs il elle ils elles on nous vous mais donc car ni se ne pas plus the'.split(' '));
 const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
-const Q_RE=/^\s*(?:q(?:uestion)?\.?\s*)?(\d{1,2})\s*(?:[\)\.\:\-–]\s+|[\)\.\:\-–]$)(.*)$/i;
+const Q_RE=/^\s*(?:(?:q(?:uestion)?|ex(?:ercice)?|n[°o])\s*\.?\s*)?(\d{1,2})\s*(?:[\)\:]\s*|[\.\-–\/]\s+|[\.\-–\/]$)(.*)$/i;
 const PTS_RES=[/\(?\s*(\d+(?:[.,]\d+)?)\s*(?:pts?|points?)\b\s*\)?/i,/\[\s*(\d+(?:[.,]\d+)?)\s*\]/,/\/\s*(\d+(?:[.,]\d+)?)\s*$/m];
 const KW_RE=/^\s*(?:mots?[\s\-]*cl[ée]s?|accept(?:er|é|ée)?)\s*[:：]\s*(.+)$/im;
 const REP_RE=/^\s*r[ée]ponse\s*[:：]\s*/im;
@@ -307,14 +300,15 @@ const toF=s=>parseFloat(String(s).replace(',','.'));
 
 function splitQuestions(text){
   const out={};let cur=null;
-  for(const line of String(text).split(/\r?\n/)){
+  for(let line of String(text).split(/\r?\n/)){
+    line=line.replace(/^\s*[lI|]\s*(?=[\)\.:])/,'1');   // l) ou I) lus à la place de 1)
     const m=line.match(Q_RE);
     if(m&&!(m[1] in out)){cur=m[1];out[cur]=m[2];}
     else if(cur!==null)out[cur]+='\n'+line;
   }
   return out;
 }
-function parseCorrection(text){
+function parseCorrectionNumbered(text){
   const qs={};
   for(const [num,b0] of Object.entries(splitQuestions(text))){
     let block=b0,pts=null;
@@ -327,6 +321,19 @@ function parseCorrection(text){
     qs[num]={pts:pts??1,enonce,answer,kws};
   }
   return qs;
+}
+let fallbackUsed=false;
+function parseCorrection(text){
+  fallbackUsed=false;
+  const q=parseCorrectionNumbered(text);
+  if(Object.keys(q).length)return q;
+  const out={};
+  String(text).split(/\r?\n/).map(s=>s.trim()).filter(s=>s.length>2).forEach((l,i)=>{
+    let pts=null,b=l;for(const rx of PTS_RES){const m=b.match(rx);if(m){pts=toF(m[1]);b=b.replace(rx,'');break;}}
+    out[String(i+1)]={pts:pts??1,enonce:b.trim(),answer:b.trim(),kws:[]};
+  });
+  fallbackUsed=Object.keys(out).length>0;
+  return out;
 }
 function lev(a,b){
   const m=a.length,n=b.length;if(!m)return n;if(!n)return m;
@@ -365,7 +372,8 @@ function gradeQuestion(q,stu){
   return{r,t:'texte',d:`${hit}/${kws.length} mots-clés trouvés`,check:r>0&&r<1};
 }
 function gradeCopy(corr,text){
-  const stu=splitQuestions(text);
+  let stu=splitQuestions(text);
+  if(!Object.keys(stu).length){stu={};String(text).split(/\r?\n/).map(s=>s.trim()).filter(Boolean).forEach((l,i)=>stu[String(i+1)]=l);}
   return Object.keys(corr).sort((a,b)=>a-b).map(num=>{
     const q=corr[num],g=gradeQuestion(q,stu[num]);
     return{numero:num,enonce_court:q.enonce,points_max:q.pts,points:Math.round(g.r*q.pts*4)/4,
@@ -374,33 +382,67 @@ function gradeCopy(corr,text){
 }
 const appreciation=n=>n>=16?'Très bien.':n>=14?'Bien.':n>=12?'Assez bien.':n>=10?'Passable.':'Insuffisant, à revoir.';
 
+// ---- vérification du texte lu (OCR) avant notation ----
+function review(texts,msg){
+  return new Promise(res=>{
+    const box=$('review');
+    box.innerHTML='<h2>📝 Texte lu par l\'OCR</h2><div style="font-size:.88rem">'+esc(msg)+'</div>'+
+      '<h3>Corrigé</h3><textarea id="rvCorr"></textarea>'+
+      texts.cop.map((c,i)=>'<h3>Copie : '+esc(c.name)+'</h3><textarea data-i="'+i+'"></textarea>').join('')+
+      '<button id="rvOk" style="width:100%;margin-top:12px">✅ Calculer les notes</button>';
+    $('rvCorr').value=texts.corr;
+    box.querySelectorAll('textarea[data-i]').forEach(t=>t.value=texts.cop[+t.dataset.i].text);
+    box.style.display='block';box.scrollIntoView({behavior:'smooth'});
+    $('rvOk').onclick=()=>{
+      texts.corr=$('rvCorr').value;
+      box.querySelectorAll('textarea[data-i]').forEach(t=>texts.cop[+t.dataset.i].text=t.value);
+      box.style.display='none';res();
+    };
+  });
+}
+
 // ---- correction ----
 $('go').onclick=async()=>{
   if(!S.corr.length)return alert('Ajoutez au moins un fichier de corrigé.');
   if(!S.cop.length)return alert('Ajoutez au moins une copie d\'élève.');
-  $('go').disabled=true;S.res=[];$('results').innerHTML='';$('csv').disabled=$('print').disabled=true;
+  $('go').disabled=true;S.res=[];$('results').innerHTML='';$('review').style.display='none';$('csv').disabled=$('print').disabled=true;
   $('bar').style.display='block';
   const st=m=>$('status').textContent=m, prog=v=>$('barI').style.width=v+'%';
   const total=S.corr.length+S.cop.length;let done=0;
   try{
-    let ctext='';
+    const texts={corr:'',cop:[]};
     for(const c of S.corr){
-      st('Lecture du corrigé : '+c.file.name+'');
-      onProg=p=>st('Lecture du corrigé : '+c.file.name+' — '+p+'%');
-      ctext+=await readFile(c.file)+'\n';prog(95*++done/total);
+      st('Lecture du corrigé : '+(c.label||c.file.name));
+      onProg=p=>st('Lecture du corrigé : '+(c.label||c.file.name)+' — '+p+'%');
+      texts.corr+=await readItem(c)+'\n';prog(90*++done/total);
     }
-    const corr=parseCorrection(ctext);
-    if(!Object.keys(corr).length)throw new Error('Aucune question reconnue dans le corrigé. Numérotez-les : 1), 2), ...');
     for(let i=0;i<S.cop.length;i++){
       const c=S.cop[i];
-      st('Copie '+(i+1)+'/'+S.cop.length+' : '+c.file.name);
-      onProg=p=>st('Copie '+(i+1)+'/'+S.cop.length+' : '+c.file.name+' — OCR '+p+'%');
+      st('Lecture de la copie '+(i+1)+'/'+S.cop.length+' : '+(c.label||c.file.name));
+      onProg=p=>st('Lecture de la copie '+(i+1)+'/'+S.cop.length+' : '+(c.label||c.file.name)+' — '+p+'%');
+      let t='';try{t=await readItem(c);}catch(e){t='';}
+      texts.cop.push({name:c.student||(c.label||c.file.name),text:t});prog(90*++done/total);
+    }
+    // vérification : toujours si le corrigé est mal reconnu, sinon si la case est cochée
+    let first=true,corr;
+    for(;;){
+      corr=parseCorrection(texts.corr);
+      const empty=!Object.keys(corr).length;
+      if(!empty&&!fallbackUsed&&!(first&&$('chkReview').checked))break;
+      st('Vérifiez le texte lu puis touchez « Calculer les notes ».');
+      await review(texts,empty?'⚠️ Aucune question reconnue dans le corrigé. Écrivez une question par bloc : 1) ... 2) ... (points : (2 pts)), puis validez.'
+        :fallbackUsed?'⚠️ Aucune numérotation (1), 2)…) détectée : chaque ligne a été prise pour une question. Numérotez-les si besoin, puis validez.'
+        :'Corrigez les erreurs de lecture si besoin (numéros 1), 2)…, mots-clés, points), puis validez.');
+      first=false;
+    }
+    for(let i=0;i<S.cop.length;i++){
+      const c=S.cop[i],t=texts.cop[i].text;
       try{
-        const qs=gradeCopy(corr,await readFile(c.file));
+        const qs=gradeCopy(corr,t);
         const T=qs.reduce((s,q)=>s+q.points,0),M=qs.reduce((s,q)=>s+q.points_max,0);
-        S.res.push({eleve:c.student||c.name,fichier:c.file.name,questions:qs,appreciation:appreciation(M?T/M*20:0)});
-      }catch(e){S.res.push({fichier:c.file.name,eleve:c.student||c.name,error:e.message,questions:[]});}
-      render();prog(95*++done/total);
+        S.res.push({eleve:c.student||c.name,fichier:(c.label||c.file.name),questions:qs,appreciation:appreciation(M?T/M*20:0)});
+      }catch(e){S.res.push({fichier:(c.label||c.file.name),eleve:c.student||c.name,error:e.message,questions:[]});}
+      render();
     }
     prog(100);st('Terminé ✔ — vérifiez les lignes ⚠️ et ajustez les points si besoin : la note se recalcule.');
     $('csv').disabled=$('print').disabled=false;

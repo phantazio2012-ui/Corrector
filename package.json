@@ -2,7 +2,7 @@
   "name": "correcteur-copies",
   "version": "1.0.0",
   "private": true,
-  "description": "Correcteur de copies scannées (OCR local) - application Android via Capacitor",
+  "description": "Correcteur de copies scann\u00e9es (OCR local) - application Android via Capacitor",
   "scripts": {
     "libs": "node scripts/copy-libs.js",
     "android:add": "npx cap add android",
@@ -11,12 +11,16 @@
   "dependencies": {
     "@capacitor/android": "^6.1.2",
     "@capacitor/browser": "^6.0.3",
-    "@capacitor/filesystem": "^6.0.2",
+    "@capacitor/camera": "^6.1.0",
     "@capacitor/core": "^6.1.2",
+    "@tesseract.js-data/eng": "1.0.0",
+    "@tesseract.js-data/fra": "1.0.0",
     "pdfjs-dist": "3.11.174",
-    "tesseract.js": "5.1.1"
+    "tesseract.js": "5.1.1",
+    "tesseract.js-core": "5.1.1"
   },
   "devDependencies": {
-    "@capacitor/cli": "^6.1.2"
+    "@capacitor/cli": "^6.1.2",
+    "@capacitor/assets": "^3.0.5"
   }
 }

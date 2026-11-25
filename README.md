@@ -1,7 +1,7 @@
 # 📝 Correcteur de copies — application Android (APK)
 
 Correction de copies scannées 100 % locale : OCR (Tesseract) + notation par règles, sans API.
-Au **premier lancement**, l'application télécharge son moteur OCR (≈ 15–20 Mo) dans son stockage interne, puis fonctionne hors ligne.
+Le moteur OCR (français + anglais) est **embarqué dans l'APK** : aucun téléchargement, fonctionne tout de suite, sans internet.
 
 ## Obtenir l'APK (sans rien installer sur votre PC)
 
@@ -29,8 +29,7 @@ Au **premier lancement**, l'application télécharge son moteur OCR (≈ 15–20
 
 ## Utilisation
 
-1. **Étape 1** (premier lancement) : choisissez la langue (Français / Anglais) et touchez
-   « Télécharger le moteur OCR ».
+1. Ouvrez l'application (le moteur OCR est déjà intégré ; choisissez la langue dans les paramètres).
 2. Importez le **corrigé annoté** (jusqu'à 10 fichiers) puis les **copies** (jusqu'à 10 fichiers),
    depuis la galerie, les fichiers ou en prenant une photo.
 3. Touchez **Corriger**. Vérifiez les lignes ⚠️ puis exportez en CSV ou imprimez en PDF.
@@ -49,9 +48,14 @@ Mots-clés : lumière, chlorophylle, dioxyde de carbone, glucose
 ```
 Points : `(2 pts)`, `[2]` ou `/2` (sans indication = 1 point). Les élèves doivent numéroter leurs réponses.
 
+## Caméra, logo et thème
+- Boutons **📷 Photographier** pour le corrigé et pour les copies : prenez plusieurs pages à la suite, puis « Terminer » (les pages forment un seul document).
+- Logo et écran de démarrage : générés à partir de `assets/` (remplacez `icon-only.png`, `icon-foreground.png`, `icon-background.png`, `splash.png` par les vôtres, 1024×1024 / 2732×2732).
+- Couleurs : variables CSS `--bg1`, `--bg2`, `--accent` en haut de `www/index.html`.
+
 ## Structure
 - `www/index.html` : l'application (interface, téléchargement du moteur, OCR, notation)
-- `scripts/copy-libs.js` : copie pdf.js et tesseract.js dans `www/lib` au moment du build
+- `scripts/copy-libs.js` : copie pdf.js, tesseract.js et le moteur OCR (worker, noyau, langues) dans `www/` au moment du build
 - `capacitor.config.json` : identifiant `ci.cgsi.correcteur`, nom de l'app
 - `.github/workflows/build-apk.yml` : compilation automatique de l'APK + publication de la Release
 - `keystore/debug.keystore` : signature fixe (mises à jour installables par-dessus)
