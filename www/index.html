@@ -7,6 +7,7 @@
 <title>Correcteur de copies scannées</title>
 <script src="lib/pdf.min.js"></script>
 <script src="lib/tesseract.min.js"></script>
+<script src="lib/jspdf.umd.min.js"></script>
 <style>
 :root{--bg1:#064e2b;--bg2:#1f9d55;--card:rgba(255,255,255,.96);--ink:#0f2a1b;--accent:#0f7a40;--ok:#0f9d58;--warn:#e67e00;--bad:#c62828}
 *{box-sizing:border-box}
@@ -123,7 +124,7 @@ textarea{width:100%;min-height:130px;padding:8px;border:1px solid #b7d9c4;border
   <div class="row">
     <button id="go">🚀 Corriger les copies</button>
     <button class="sec" id="csv" disabled>⬇️ Export CSV</button>
-    <button class="sec" id="print" disabled>🖨️ Imprimer / PDF</button>
+    <button class="sec" id="print" disabled>📄 Exporter en PDF</button>
   </div>
   <div class="bar" id="bar"><i id="barI"></i></div>
   <div id="status"></div>
@@ -516,13 +517,75 @@ function render(){
 }
 $('noteSur').onchange=render;
 
-$('csv').onclick=()=>{
-  const rows=[['Élève','Fichier','Total brut','Total max','Note /'+sur()]];
-  S.res.forEach(r=>{if(r.error){rows.push([r.eleve,r.fichier,'ERREUR','','']);return;}const T=totals(r);rows.push([r.eleve,r.fichier,T.t,T.m,T.note]);});
-  const csv='﻿'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='notes.csv';a.click();
+// ---- export : enregistrement / partage (fonctionne dans l'APK ET dans le navigateur) ----
+const b64Text=s=>btoa(unescape(encodeURIComponent(s)));
+async function saveShare(name,mime,b64){
+  const P=window.Capacitor&&Capacitor.Plugins,native=window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform();
+  if(native&&P&&P.Filesystem&&P.Share){
+    await P.Filesystem.writeFile({path:name,data:b64,directory:'CACHE'});
+    const {uri}=await P.Filesystem.getUri({path:name,directory:'CACHE'});
+    await P.Share.share({title:name,url:uri,dialogTitle:'Enregistrer ou envoyer'});
+  }else{
+    const bin=atob(b64),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([u8],{type:mime}));a.download=name;document.body.appendChild(a);a.click();a.remove();
+  }
+}
+const pdfTxt=s=>String(s??'').replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,'-').replace(/…/g,'...').replace(/[^\x20-\xFF\n]/g,'');
+function buildPdf(JsPDF,results,surN,dateStr){
+  const doc=new JsPDF({unit:'mm',format:'a4'}),W=210,M=14;
+  const G=[15,122,64],INK=[15,42,27];
+  const tot=r=>{const qs=r.questions||[];const t=qs.reduce((s,q)=>s+(+q.points||0),0);const m=qs.reduce((s,q)=>s+(+q.points_max||0),0);return{t:Math.round(t*100)/100,m,note:m?Math.round(t/m*surN*100)/100:0};};
+  const head=(title,sub)=>{doc.setFillColor(...G);doc.rect(0,0,W,24,'F');doc.setTextColor(255);doc.setFont('helvetica','bold');doc.setFontSize(16);doc.text(pdfTxt(title),M,15);
+    if(sub){doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text(pdfTxt(sub),W-M,15,{align:'right'});}doc.setTextColor(...INK);};
+  // page de synthèse
+  head('Correcteur de copies - Resultats',dateStr);
+  let y=38;doc.setFontSize(11);doc.setFont('helvetica','bold');doc.text('Eleve',M,y);doc.text('Total brut',120,y);doc.text('Note finale',W-M,y,{align:'right'});
+  doc.setDrawColor(...G);doc.line(M,y+2,W-M,y+2);y+=9;doc.setFont('helvetica','normal');
+  results.forEach(r=>{
+    if(y>275){doc.addPage();y=20;}
+    doc.text(pdfTxt(r.eleve||'-'),M,y);
+    if(r.error){doc.text('ERREUR',120,y);}else{const T=tot(r);doc.text(T.t+' / '+T.m,120,y);doc.setFont('helvetica','bold');doc.text(T.note+' / '+surN,W-M,y,{align:'right'});doc.setFont('helvetica','normal');}
+    y+=8;
+  });
+  // une page (ou plus) par élève
+  results.forEach(r=>{
+    doc.addPage();
+    if(r.error){head(r.eleve||'Eleve','Erreur');doc.setFontSize(11);doc.text(pdfTxt(r.error),M,40);return;}
+    const T=tot(r);head('Copie : '+(r.eleve||'-'),dateStr);
+    doc.setFont('helvetica','bold');doc.setFontSize(26);doc.setTextColor(...G);doc.text(T.note+' / '+surN,M,40);
+    doc.setFontSize(10);doc.setTextColor(...INK);doc.setFont('helvetica','normal');doc.text('Total brut : '+T.t+' / '+T.m,M,47);
+    if(r.appreciation){doc.text(pdfTxt('Appreciation : '+r.appreciation),M,53);}
+    let yy=64;doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text('N°',M,yy);doc.text('Points',M+14,yy);doc.text('Question / reponse / commentaire',M+38,yy);
+    doc.setDrawColor(...G);doc.line(M,yy+2,W-M,yy+2);yy+=8;doc.setFont('helvetica','normal');
+    (r.questions||[]).forEach(q=>{
+      const lines=doc.splitTextToSize(pdfTxt((q.enonce_court?q.enonce_court+' | ':'')+(q.reponse_eleve?'Reponse : '+q.reponse_eleve+' | ':'')+(q.commentaire||'')),W-M-(M+38));
+      const hgt=Math.max(1,lines.length)*4.2+3;
+      if(yy+hgt>285){doc.addPage();yy=20;}
+      doc.setFont('helvetica','bold');doc.text(pdfTxt(q.numero),M,yy);
+      const full=(+q.points||0)>=(+q.points_max||0);doc.setTextColor(...(full?G:[198,40,40]));doc.text((+q.points||0)+' / '+(+q.points_max||0),M+14,yy);
+      doc.setTextColor(...INK);doc.setFont('helvetica','normal');doc.text(lines,M+38,yy);
+      if(q.a_verifier){doc.setTextColor(230,126,0);doc.setFontSize(8);doc.text('[a verifier]',W-M,yy,{align:'right'});doc.setFontSize(9);doc.setTextColor(...INK);}
+      yy+=hgt;
+    });
+  });
+  return doc;
+}
+$('csv').onclick=async()=>{
+  try{
+    const rows=[['Élève','Fichier','Total brut','Total max','Note /'+sur()]];
+    S.res.forEach(r=>{if(r.error){rows.push([r.eleve,r.fichier,'ERREUR','','']);return;}const T=totals(r);rows.push([r.eleve,r.fichier,T.t,T.m,T.note]);});
+    const csv='﻿'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');
+    await saveShare('notes.csv','text/csv',b64Text(csv));
+  }catch(e){alert('Export CSV impossible : '+(e.message||e));}
 };
-$('print').onclick=()=>window.print();
+$('print').onclick=async()=>{
+  try{
+    const J=window.jspdf&&window.jspdf.jsPDF;if(!J)throw new Error('module PDF absent');
+    const doc=buildPdf(J,S.res,sur(),new Date().toLocaleDateString('fr-FR'));
+    const b64=doc.output('datauristring').split(',')[1];
+    await saveShare('resultats-correction.pdf','application/pdf',b64);
+  }catch(e){alert('Export PDF impossible : '+(e.message||e));}
+};
 </script>
 </body>
 </html>

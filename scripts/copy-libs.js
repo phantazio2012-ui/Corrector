@@ -6,6 +6,7 @@ const files = [
   ['pdfjs-dist/build/pdf.min.js', 'www/lib/pdf.min.js'],
   ['pdfjs-dist/build/pdf.worker.min.js', 'www/lib/pdf.worker.min.js'],
   ['tesseract.js/dist/tesseract.min.js', 'www/lib/tesseract.min.js'],
+  ['jspdf/dist/jspdf.umd.min.js', 'www/lib/jspdf.umd.min.js'],
   ['tesseract.js/dist/worker.min.js', 'www/ocr/worker.min.js'],
   ['tesseract.js-core/tesseract-core-simd-lstm.wasm.js', 'www/ocr/core/tesseract-core-simd-lstm.wasm.js'],
   ['tesseract.js-core/tesseract-core-lstm.wasm.js', 'www/ocr/core/tesseract-core-lstm.wasm.js'],

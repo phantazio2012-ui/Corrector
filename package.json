@@ -13,8 +13,11 @@
     "@capacitor/browser": "^6.0.3",
     "@capacitor/camera": "^6.1.0",
     "@capacitor/core": "^6.1.2",
+    "@capacitor/filesystem": "^6.0.2",
+    "@capacitor/share": "^6.0.3",
     "@tesseract.js-data/eng": "1.0.0",
     "@tesseract.js-data/fra": "1.0.0",
+    "jspdf": "2.5.2",
     "pdfjs-dist": "3.11.174",
     "tesseract.js": "5.1.1",
     "tesseract.js-core": "5.1.1"
